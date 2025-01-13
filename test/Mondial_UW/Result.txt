@@ -1,0 +1,7 @@
+HL_basic generated in: 639.811000ms./0.639811s.
+HL Size is 1799100
+Average HL query time: 0.000445 ms.
+ADO_basic generated in: 908.904000ms./0.908904s.
+ADO Size is 1387669
+Average ADO query time: 0.000592 ms.
+Average ratio is 1.676088

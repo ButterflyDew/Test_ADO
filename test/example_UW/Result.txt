@@ -1,0 +1,3 @@
+ADO_basic generated in: 5.228000ms./0.005228s.
+ADO Size is 64
+Average ADO query time: 0.000400 ms.
