@@ -1,0 +1,6 @@
+ADO_basic generated in: 118905.566000ms./118.905566s.
+ADO Size is 59459351
+Average ADO query time: 0.003400 ms.
+ADO_fixed_Ak generated in: 87409.445000ms./87.409445s.
+ADO Size is 56086743
+Average ADO query time: 0.002300 ms.

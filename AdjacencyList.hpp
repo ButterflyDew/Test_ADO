@@ -4,6 +4,8 @@
 #include <limits>
 #include <vector>
 #include <queue>
+#include <map>
+#include <algorithm>
 #include <unordered_set>
 
 template<typename NodeType, typename DistanceType>
@@ -21,6 +23,13 @@ class AdjacencyList
         {
             mat[u].push_back(std::make_pair(v, d));
             mat[v].push_back(std::make_pair(u, d));
+
+            auto uv = std::make_pair(u, v), vu = std::make_pair(v, u);
+            if(weig.contains(uv)) weig[uv] = std::min(weig[uv], d);
+            else weig[uv] = d;
+            if(weig.contains(vu)) weig[vu] = std::min(weig[vu], d);
+            else weig[vu] = d;
+
             edgeCount++;
         }
 
@@ -28,6 +37,12 @@ class AdjacencyList
         const Matrix& GetMatrix() const { return mat; }
         std::size_t GetSize() const { return sz; }
         std::size_t GetEdgeCount() const { return edgeCount; }
+        DistanceType GetEdgeuv(NodeType u, NodeType v)
+        {
+            auto uv = std::make_pair(u, v);
+            if(weig.contains(uv)) return weig[uv];
+            else return std::numeric_limits<DistanceType>::max(); 
+        }
 
         // Use some shortest path algorithm
         std::vector<DistanceType> GetNearest(NodeType u) const
@@ -70,6 +85,7 @@ class AdjacencyList
         std::size_t sz;
         std::size_t edgeCount;
         Matrix mat;
+        std::map <std::pair <NodeType, NodeType>, DistanceType> weig; 
 };
 
 

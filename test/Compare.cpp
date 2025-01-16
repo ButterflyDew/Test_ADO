@@ -1,5 +1,6 @@
 #include "../HL/HL_basic.hpp"
 #include "../ADO/ADO_basic.hpp"
+#include "../ADO/ADO_fixed_Ak.hpp"
 #include "../AdjacencyList.hpp"
 #include "../Utilities.hpp"
 #include "Load_Graph.hpp"
@@ -22,6 +23,9 @@ using Clock = std::chrono::high_resolution_clock;
 #define Nop 0
 
 int ban;
+int seed;
+std::string resultname;
+
 
 namespace fs = std::filesystem;
 class FileManager 
@@ -83,8 +87,8 @@ vector<DistanceType> RunHL_basic(AdjacencyList<NodeType, DistanceType> &adjList,
 
     std::string create_time = "HL_basic generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
     + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
-    fop.writeToFile("Result.txt", create_time);
-    fop.writeToFile("Result.txt", "HL Size is " + std::to_string(oracle.LabelSize));
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "HL Size is " + std::to_string(oracle.LabelSize));
     
     
     start = Clock::now();
@@ -98,7 +102,7 @@ vector<DistanceType> RunHL_basic(AdjacencyList<NodeType, DistanceType> &adjList,
     dur = Clock::now() - start;
 
     std::string query_time = "Average HL query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
-    fop.writeToFile("Result.txt", query_time);
+    fop.writeToFile(resultname, query_time);
     return ans;
 }
 
@@ -120,8 +124,8 @@ vector<DistanceType> RunADO_basic(AdjacencyList<NodeType, DistanceType> &adjList
 
     std::string create_time = "ADO_basic generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
     + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
-    fop.writeToFile("Result.txt", create_time);
-    fop.writeToFile("Result.txt", "ADO Size is " + std::to_string(oracle.LabelSize));
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "ADO Size is " + std::to_string(oracle.LabelSize));
 
     
     start = Clock::now();
@@ -130,51 +134,127 @@ vector<DistanceType> RunADO_basic(AdjacencyList<NodeType, DistanceType> &adjList
         auto [u,v] = qry[i];
         DistanceType c = oracle.Query(u, v);
         // assert(c <= (2 * K - 1) * opt);
-        //std::cerr << "The Aprov. distance of " << u << " and " << v << " is " << c << "\n";
+        //std::cerr << "In basic, The Aprov. distance of " << u << " and " << v << " is " << c << "\n";
         ans[i]=c;
     }
     dur = Clock::now() - start;
 
     std::string query_time = "Average ADO query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
-    fop.writeToFile("Result.txt", query_time);
+    fop.writeToFile(resultname, query_time);
 
     return ans;
 }
 
+template<typename NodeType, typename DistanceType>
+std::pair <vector<DistanceType>,vector<DistanceType> > RunADO_fixed_1(AdjacencyList<NodeType, DistanceType> &adjList, int K, vector <pair <NodeType,NodeType> > &qry, FileManager &fop)
+{
+    int m=qry.size();
+    std::vector <DistanceType> ans(m),ans_(m);
+    if(ban>>1&1) 
+    {
+        std::cerr<<"Not Run ADO"<<std::endl;
+        return std::make_pair(ans, ans_);
+    }
+    int N = adjList.GetSize();
+
+    auto start = Clock::now();
+    ADO_fixed_1<NodeType, DistanceType> oracle(adjList, K);
+    oracle.setseed(seed);
+
+    auto dur = Clock::now() - start;
+
+    std::string create_time = "ADO_fixed_Ak generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
+    + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "ADO Size is " + std::to_string(oracle.LabelSize));
+
+    
+    start = Clock::now();
+    int gcnt = 0;
+    for(int i = 0; i < m; i++)
+    {
+        auto [u,v] = qry[i];
+        DistanceType c = oracle.Query_Length(u, v);
+        auto [c_, vex] = oracle.Query_Path(u, v);
+        //assert(c <= (2 * K - 1) * opt);
+        assert(c_ <= c);
+
+        if(c_ != c) ++gcnt;
+
+        if(!vex.empty())
+        {
+            int vlen = vex.size();
+            DistanceType sumw = 0;
+            for(int j = 1; j < vlen; j++) 
+            {
+                assert(adjList.GetEdgeuv(vex[j - 1], vex[j]) != std::numeric_limits<DistanceType>::max());
+                sumw += adjList.GetEdgeuv(vex[j - 1], vex[j]);
+            }
+            if(abs(sumw-c_) > 1e-9)
+                std::cerr << std::fixed << std::setprecision(10) << sumw << " " << c_ << "\n";
+            assert(abs(sumw-c_) <= 1e-9);
+        }
+        
+        // std::cerr << "In f1, The Aprov. distance of " << u << " and " << v << " is " << c << "\n";
+        // std::cerr << "c_ is " << c_ << "\n" << "Path is:";
+        // for(auto x: vex) std::cerr << x << " ";
+        // std::cerr << "\n\n";
+        ans[i] = c;
+        ans_[i] = c_;
+    }
+    std::cerr << "Great distance ratio is " << 1.0*gcnt/m << "\n";
+    dur = Clock::now() - start;
+
+    std::string query_time = "Average ADO query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
+    fop.writeToFile(resultname, query_time);
+
+    return std::make_pair(ans, ans_);
+}
+
 template <typename DistanceType>
-void Compare_Appro(vector <DistanceType> &anshl, vector <DistanceType> &ansado, FileManager &fop, int K)
+void Compare_Appro(vector <DistanceType> &anshl, vector <vector <DistanceType> > &ansado, FileManager &fop, int K)
 {
     if(ban!=0) return;
     int qn=anshl.size();
     DistanceType inf = std::numeric_limits<DistanceType>::max();
-    double ratio = 0;
-    for(int i = 0; i < qn; i++)
+    int cur = 0;
+    for(auto ado: ansado)
     {
-        DistanceType x = anshl[i], y = ansado[i];
-        if(x == inf || y == inf)
+        ++cur;
+        double ratio = 0;
+        int cntc = 0;
+        for(int i = 0; i < qn; i++)
         {
-            if(x != inf || y != inf) 
+            DistanceType x = anshl[i], y = ado[i];
+            if(abs(x-y) < 1e-9) ++cntc; 
+            if(x == inf || y == inf)
             {
-                std::cerr << x << " " << y << std::endl;
-                std::cerr << "Error1" << std::endl;
-                exit(0);
+                if(x != inf || y != inf) 
+                {
+                    std::cerr << x << " " << y << std::endl;
+                    std::cerr << "Error1" << std::endl;
+                    exit(0);
+                }
+                ratio += 1;
             }
-            ratio += 1;
+            else if(x!=0)
+            {
+                if(1.0*y/x > 2*K - 1)
+                {
+                    std::cerr << x << " " << y << std::endl;
+                    std::cerr << "Error2" << std::endl;
+                    exit(0);
+                }
+                ratio += 1.0*y/x;
+            }    
+            else
+                ratio += 1;
         }
-        else if(x!=0)
-        {
-            if(1.0*y/x > 2*K - 1)
-            {
-                std::cerr << x << " " << y << std::endl;
-                std::cerr << "Error2" << std::endl;
-                exit(0);
-            }
-            ratio += 1.0*y/x;
-        }    
+        ratio/=1.0*qn;
+        std::string info = "Average ratio " + std::to_string(cur) + " is " + std::to_string(ratio) 
+                         + " and correctness rate is " + std::to_string(1.0*cntc/qn);
+        fop.writeToFile(resultname, info); 
     }
-    ratio/=1.0*qn;
-    std::string info = "Average ratio is " + std::to_string(ratio);
-    fop.writeToFile("Result.txt", info); 
 }
 std::map <std::string, int> offs;
 int main(int argc, char* argv[])
@@ -185,7 +265,7 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    const int seed = atoi(argv[1]);
+    seed = atoi(argv[1]);
     std::string graphname = argv[2];
     const int type = atoi(argv[3]);
     const int QM = atoi(argv[4]);
@@ -201,12 +281,14 @@ int main(int argc, char* argv[])
             qry.push_back({rnd(gen),rnd(gen)});
         return qry;
     };
-
     std::string filename = "../data/"+graphname;
-
     FileManager fop(graphname+(type == 0 ?"_UW":"_IW"));
-    ban=OnlyADO;
-    fop.clearFile("Result.txt");
+    
+    
+    ban = Nop;
+    resultname = "Result_fixed3.txt";
+    
+    fop.clearFile(resultname);
     if(type==0)
     {
         LoadGraph <int,int> g(filename, 0, offs[graphname]);
@@ -214,7 +296,10 @@ int main(int argc, char* argv[])
         auto qry = geneqry();
         auto anshl = RunHL_basic(g.adjList, qry, fop);
         auto ansado = RunADO_basic(g.adjList, K, qry, fop);
-        Compare_Appro(anshl, ansado, fop, K);
+        auto ansado_f1 = RunADO_fixed_1(g.adjList, K, qry, fop);
+        vector <vector <int> > ado;
+        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second);
+        Compare_Appro(anshl, ado, fop, K);
     }
     else
     {
@@ -223,7 +308,10 @@ int main(int argc, char* argv[])
         auto qry = geneqry();
         auto anshl = RunHL_basic(g.adjList, qry, fop);
         auto ansado = RunADO_basic(g.adjList, K, qry, fop);
-        Compare_Appro(anshl, ansado, fop, K);
+        auto ansado_f1 = RunADO_fixed_1(g.adjList, K, qry, fop);
+        vector <vector <double> > ado;
+        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second);
+        Compare_Appro(anshl, ado, fop, K);
     }
     
     return 0;

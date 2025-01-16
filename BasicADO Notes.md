@@ -18,7 +18,7 @@ $k\times n$ 的数组  $P(i,x)=(rt,dis)$ 表示 $A_i$ 为起点集合得到的�
 
 1. 求 $A_i$ 点为源点集合的最短路树，得到 $P(i,\dots)$ 数组。 使用 pq 实现，本步复杂度为 $O(m\log n)$。
 
-2. 以 $A_{i+1}-A_i$ 中的点 $x$ 为源点分别跑一次局部的 dijk，求数组 $C[x]$ 表示 $x$​ 点为根的最短路树信息。
+2. 以 $A_{i}-A_{i+1}$ 中的点 $x$ 为源点分别跑一次局部的 dijk，求数组 $C[x]$ 表示 $x$​ 点为根的最短路树信息。
 
    - 关于局部到何时进行剪枝？
 
@@ -48,6 +48,8 @@ DistanceType Query(NodeType u, NodeType v)
     return B[u][w] + B[v][w];
 }
 ```
+
+#### Path-Repoting 扩展
 
 
 

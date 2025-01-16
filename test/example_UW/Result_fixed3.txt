@@ -1,0 +1,12 @@
+HL_basic generated in: 2.377000ms./0.002377s.
+HL Size is 44
+Average HL query time: 0.000140 ms.
+ADO_basic generated in: 5.837000ms./0.005837s.
+ADO Size is 64
+Average ADO query time: 0.000230 ms.
+ADO_fixed_Ak generated in: 1.942000ms./0.001942s.
+ADO Size is 57
+Average ADO query time: 0.008660 ms.
+Average ratio 1 is 1.138690 and correctness rate is 0.740000
+Average ratio 2 is 1.084500 and correctness rate is 0.880000
+Average ratio 3 is 1.017833 and correctness rate is 0.930000
