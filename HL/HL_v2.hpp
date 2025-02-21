@@ -24,17 +24,17 @@ using std::ifstream;
 using std::ofstream;
 
 template<typename NodeType, typename DistanceType>
-class HL_basic
+class HL_v2
 {
     using AdjList = AdjacencyList<NodeType, DistanceType>;
 
     public:
         long long LabelSize;
-        HL_basic(AdjList &lis, string filepre): graph(lis)
+        HL_v2(AdjList &lis, string filepre): graph(lis)
         { 
             Read_Label(filepre);
         }
-        HL_basic(AdjList &lis): graph(lis)
+        HL_v2(AdjList &lis, int Sta): graph(lis), Status(Sta)
         {
             LabelSize = 0;
             std::cerr << "Start Construct HL!" << std::endl;
@@ -53,6 +53,7 @@ class HL_basic
             for(NodeType i=0;i<n;i++) vid[i]=i;
             sort(vid.begin(),vid.end(),[&](auto x,auto y){return deg[x]>deg[y];});
 
+            vector <NodeType> isr(n), tag(n + 1), par(n + 1);
             
             vector <DistanceType> d(n,inf);
 
@@ -69,30 +70,52 @@ class HL_basic
                 vector <NodeType> inq;
                 NodeType rt=vid[i];
                 d[rt]=0;
+                par[rt] = n;
+
+                for(auto [v, w]: L[rt])
+                    qtable[v] = w;
+
                 std::priority_queue <pair <DistanceType, NodeType>, vector <pair <DistanceType, NodeType> >, std::greater <pair <DistanceType, NodeType>> > q;
                 q.push({d[rt],rt});
                 while(!q.empty())
                 {
                     auto [dis, u]=q.top();
                     q.pop();
+                    
                     if(d[u]<dis) continue;
+
                     inq.push_back(u);
-                    if(d[u] < Query(rt, u))
+
+                    if((Status&1)&&isr[u]) continue;
+
+                    tag[u] = tag[par[u]]|isr[u];
+
+                    if(((Status>>1&1) && tag[u] == 0) || ( (Status>>2&1) ? Query_Greater(u, d[u]) : d[u] < Query(rt, u) ) )
                     {
                         L[u].push_back({rt,d[u]});
                         for(auto [v,w]: graph.GetAllEdges(u))
                             if(d[u]+w<d[v])
                             {
-                                d[v]=d[u]+w;
+                                d[v] = d[u] + w;
+                                par[v] = u;
                                 q.push({d[v],v});
                             }
                     }
                 }
-                for(auto u: inq) d[u]=inf;
+                for(auto u: inq) d[u] = inf, tag[u] = 0;
+                for(auto [v, _]: L[rt])
+                    qtable[v] = inf;
+                isr[rt] = 1;
             }
 
             for(int i = 0; i < n; i++) LabelSize += L[i].size();
             std::cerr << "HL Contruct Done!" << std::endl;
+        }
+
+        bool Query_Greater(NodeType u, DistanceType d)
+        {
+            for(auto [v, w]: L[u]) if(qtable[v] <= d - w) return false;
+            return true;
         }
 
         DistanceType Query(NodeType u, NodeType v)
@@ -149,7 +172,7 @@ class HL_basic
             inputFile >> n;
             L.assign(n, vector<pair <NodeType, DistanceType> >());
             qtable.assign(n, inf);
-
+                
             int i = 0, per = 0;
             string Line;
             getline(inputFile, Line);
@@ -160,7 +183,6 @@ class HL_basic
                     cerr << "Finish read "<< per*10 <<"%\n";
                     ++per;
                 }
-                //cerr << i << "\n" << Line << "\n";
                 istringstream line(Line);
                 string value;
                 while(getline(line, value, ','))
@@ -183,6 +205,7 @@ class HL_basic
         vector<DistanceType> qtable;
         DistanceType inf;
         NodeType n;
+        int Status;
 
         void clear_all()
         {

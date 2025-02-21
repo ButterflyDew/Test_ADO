@@ -1,6 +1,8 @@
 #include "../HL/HL_basic.hpp"
 #include "../ADO/ADO_basic.hpp"
 #include "../ADO/ADO_fixed_Ak.hpp"
+#include "../HL_ADO/mix.hpp"
+#include "../HL_ADO/mix_fixed.hpp"
 #include "../AdjacencyList.hpp"
 #include "../Utilities.hpp"
 #include "Load_Graph.hpp"
@@ -102,6 +104,71 @@ vector<DistanceType> RunHL_basic(AdjacencyList<NodeType, DistanceType> &adjList,
     dur = Clock::now() - start;
 
     std::string query_time = "Average HL query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
+    fop.writeToFile(resultname, query_time);
+    return ans;
+}
+
+template<typename NodeType, typename DistanceType>
+vector<DistanceType> RunMix_Basic(AdjacencyList<NodeType, DistanceType> &adjList,vector <pair <NodeType,NodeType> > &qry, FileManager &fop)
+{
+    int m=qry.size();
+    std::vector <DistanceType> ans(m);
+    int N = adjList.GetSize();
+
+    auto start = Clock::now();
+    Mix_basic<NodeType, DistanceType> oracle(adjList, ceil(pow(N, 0.4)) + 1);
+    auto dur = Clock::now() - start;
+
+    std::string create_time = "Mix_Basic generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
+    + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "Size is " + std::to_string(oracle.LabelSize));
+    
+    
+    start = Clock::now();
+    for(int i = 0; i < m; i++)
+    {
+        auto [u,v] = qry[i];
+        DistanceType c = oracle.Query(u, v);
+        //std::cerr << "The exact distance of " << u << " and " << v << " is " << c << "\n";
+        ans[i]=c;
+    }
+    dur = Clock::now() - start;
+
+    std::string query_time = "Average Mix query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
+    fop.writeToFile(resultname, query_time);
+    return ans;
+}
+
+template<typename NodeType, typename DistanceType>
+vector<DistanceType> RunMix_fixed(AdjacencyList<NodeType, DistanceType> &adjList,int K,vector <pair <NodeType,NodeType> > &qry, FileManager &fop)
+{
+    int m=qry.size();
+    std::vector <DistanceType> ans(m);
+    int N = adjList.GetSize();
+
+    auto start = Clock::now();
+    Mix_fixed<NodeType, DistanceType> oracle(adjList, K);
+    oracle.setseed(seed);
+    auto dur = Clock::now() - start;
+
+    std::string create_time = "Mix_fixed generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
+    + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "Mix_fixed Size is " + std::to_string(oracle.LabelSize));
+    
+    
+    start = Clock::now();
+    for(int i = 0; i < m; i++)
+    {
+        auto [u,v] = qry[i];
+        DistanceType c = oracle.Query(u, v);
+        //std::cerr << "The exact distance of " << u << " and " << v << " is " << c << "\n";
+        ans[i]=c;
+    }
+    dur = Clock::now() - start;
+
+    std::string query_time = "Average Mix query time: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()/m) + " ms.";
     fop.writeToFile(resultname, query_time);
     return ans;
 }
@@ -212,7 +279,7 @@ std::pair <vector<DistanceType>,vector<DistanceType> > RunADO_fixed_1(AdjacencyL
 }
 
 template <typename DistanceType>
-void Compare_Appro(vector <DistanceType> &anshl, vector <vector <DistanceType> > &ansado, FileManager &fop, int K)
+void Compare_Appro(vector <DistanceType> &anshl, vector <vector <DistanceType> > &ansado, FileManager &fop, vector <int> K)
 {
     if(ban!=0) return;
     int qn=anshl.size();
@@ -220,6 +287,7 @@ void Compare_Appro(vector <DistanceType> &anshl, vector <vector <DistanceType> >
     int cur = 0;
     for(auto ado: ansado)
     {
+        int k_now = K[cur];
         ++cur;
         double ratio = 0;
         int cntc = 0;
@@ -239,7 +307,7 @@ void Compare_Appro(vector <DistanceType> &anshl, vector <vector <DistanceType> >
             }
             else if(x!=0)
             {
-                if(1.0*y/x > 2*K - 1)
+                if(1.0*y/x > 2*k_now - 1)
                 {
                     std::cerr << x << " " << y << std::endl;
                     std::cerr << "Error2" << std::endl;
@@ -282,11 +350,11 @@ int main(int argc, char* argv[])
         return qry;
     };
     std::string filename = "../data/"+graphname;
-    FileManager fop(graphname+(type == 0 ?"_UW":"_IW"));
+    FileManager fop(graphname+(type == 0 ?"_UW":"_IW") + "_K=" + std::to_string(K));
     
     
     ban = Nop;
-    resultname = "Result_fixed3.txt";
+    resultname = "Result_fixed5.txt";
     
     fop.clearFile(resultname);
     if(type==0)
@@ -297,9 +365,13 @@ int main(int argc, char* argv[])
         auto anshl = RunHL_basic(g.adjList, qry, fop);
         auto ansado = RunADO_basic(g.adjList, K, qry, fop);
         auto ansado_f1 = RunADO_fixed_1(g.adjList, K, qry, fop);
+        auto ansmix = RunMix_Basic(g.adjList, qry, fop);
+        //auto ansmix = RunMix_fixed(g.adjList, K, qry, fop);
         vector <vector <int> > ado;
-        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second);
-        Compare_Appro(anshl, ado, fop, K);
+        vector <int> Ki;
+        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second), ado.push_back(ansmix);
+        Ki.push_back(K), Ki.push_back(K), Ki.push_back(K), Ki.push_back(K);
+        Compare_Appro(anshl, ado, fop, Ki);
     }
     else
     {
@@ -309,9 +381,13 @@ int main(int argc, char* argv[])
         auto anshl = RunHL_basic(g.adjList, qry, fop);
         auto ansado = RunADO_basic(g.adjList, K, qry, fop);
         auto ansado_f1 = RunADO_fixed_1(g.adjList, K, qry, fop);
+        auto ansmix = RunMix_Basic(g.adjList, qry, fop);
+        //auto ansmix = RunMix_fixed(g.adjList, K, qry, fop);
         vector <vector <double> > ado;
-        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second);
-        Compare_Appro(anshl, ado, fop, K);
+        vector <int> Ki;
+        ado.push_back(ansado), ado.push_back(ansado_f1.first), ado.push_back(ansado_f1.second), ado.push_back(ansmix);
+        Ki.push_back(K), Ki.push_back(K), Ki.push_back(K), Ki.push_back(K);
+        Compare_Appro(anshl, ado, fop, Ki);
     }
     
     return 0;

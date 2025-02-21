@@ -1,0 +1,16 @@
+HL_basic generated in: 1939219.502000ms./1939.219502s.
+HL Size is 299380398
+Average HL query time: 0.005460 ms.333
+ADO_basic generated in: 240275.427000ms./240.275427s.
+ADO Size is 106191002
+Average ADO query time: 0.001591 ms.
+ADO_fixed_Ak generated in: 63051.543000ms./63.051543s.
+ADO Size is 70244065
+Average ADO query time: 0.017069 ms.
+Mix_Basic generated in: 192417.678000ms./192.417678s.
+Size is 114403724
+Average Mix query time: 0.002427 ms.
+Average ratio 1 is 1.615538 and correctness rate is 0.011400
+Average ratio 2 is 1.267049 and correctness rate is 0.187320
+Average ratio 3 is 1.223297 and correctness rate is 0.250110
+Average ratio 4 is 1.086547 and correctness rate is 0.483080
