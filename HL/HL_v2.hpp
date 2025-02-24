@@ -77,6 +77,9 @@ class HL_v2
 
                 std::priority_queue <pair <DistanceType, NodeType>, vector <pair <DistanceType, NodeType> >, std::greater <pair <DistanceType, NodeType>> > q;
                 q.push({d[rt],rt});
+
+                int flg = 1;
+
                 while(!q.empty())
                 {
                     auto [dis, u]=q.top();
@@ -84,13 +87,15 @@ class HL_v2
                     
                     if(d[u]<dis) continue;
 
+                    if(isr[u]) flg = 0;
+
                     inq.push_back(u);
 
                     if((Status&1)&&isr[u]) continue;
 
                     tag[u] = tag[par[u]]|isr[u];
 
-                    if(((Status>>1&1) && tag[u] == 0) || ( (Status>>2&1) ? Query_Greater(u, d[u]) : d[u] < Query(rt, u) ) )
+                    if(((Status>>1&1) && flg) || ( (Status>>2&1) ? Query_Greater(u, d[u]) : d[u] < Query(rt, u) ) )
                     {
                         L[u].push_back({rt,d[u]});
                         for(auto [v,w]: graph.GetAllEdges(u))

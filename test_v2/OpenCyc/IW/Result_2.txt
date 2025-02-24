@@ -1,0 +1,26 @@
+HL_basic generated in: 1991.516000ms./1.991516s.
+HL Size is 3242803
+Average HL query time: 0.000583 ms.
+
+ADO_v2 generated in: 1416.822000ms./1.416822s.
+ADO Size is 3158300
+Average ADO_Distance query time: 0.000390 ms.
+Average ADO_Path query time: 0.006721 ms.
+ADO only distance: Average ratio is 1.058025 and correctness rate is 0.588730
+ADO path: Average ratio is 1.053846 and correctness rate is 0.599730
+
+Mix_Basic_n^{0.500000} generated in: 1480.303000ms./1.480303s.
+Mix_Basic_n^{0.500000} size is 2612111
+Average Mix_Basic_n^{0.500000} query time: 0.000537 ms.
+Mix sqrt: Average ratio is 1.001453 and correctness rate is 0.989460
+
+Mix_Basic_n^{0.400000} generated in: 1064.594000ms./1.064594s.
+Mix_Basic_n^{0.400000} size is 2060617
+Average Mix_Basic_n^{0.400000} query time: 0.000422 ms.
+Mix ^0.4: Average ratio is 1.005753 and correctness rate is 0.949780
+
+Mix_v2 generated in: 732.484000ms./0.732484s.
+Mix_v2 Size is 1669695
+Average Mix_v2 query time: 0.000427 ms.
+Mix_v2: Average ratio is 1.015360 and correctness rate is 0.874900
+

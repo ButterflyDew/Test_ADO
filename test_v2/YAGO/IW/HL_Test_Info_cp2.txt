@@ -1,0 +1,4 @@
+HL_None generated in: 192922.103000ms./192.922103s.
+HL_None Size is 104019034
+HL_None generated in: 93139.038000ms./93.139038s.
+HL_None Size is 45039472

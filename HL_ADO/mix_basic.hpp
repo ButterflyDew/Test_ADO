@@ -46,7 +46,7 @@ class Mix_basic
             for(NodeType i=0;i<n;i++) vid[i]=i;
             sort(vid.begin(),vid.end(),[&](auto x,auto y){return deg[x]>deg[y];});
 
-            
+            vector <NodeType> isr(n);
             vector <DistanceType> d(n,inf);
 
             vector <int> Ai;
@@ -57,6 +57,11 @@ class Mix_basic
                 NodeType rt=vid[i];
                 Ai.push_back(vid[i]);
                 d[rt]=0;
+                
+                for(auto [v, w]: L[rt])
+                    qtable[v] = w;
+                int flg = 1;
+
                 std::priority_queue <pair <DistanceType, NodeType>, vector <pair <DistanceType, NodeType> >, std::greater <pair <DistanceType, NodeType>> > q;
                 q.push({d[rt],rt});
                 while(!q.empty())
@@ -65,7 +70,12 @@ class Mix_basic
                     q.pop();
                     if(d[u]<dis) continue;
                     inq.push_back(u);
-                    if(d[u] < Query(rt, u))
+                    if(isr[u]) 
+                    {
+                        flg = 0;
+                        continue;
+                    }
+                    if(flg || Query_Greater(u, d[u]))
                     {
                         L[u].push_back({rt,d[u]});
                         for(auto [v,w]: graph.GetAllEdges(u))
@@ -77,6 +87,9 @@ class Mix_basic
                     }
                 }
                 for(auto u: inq) d[u]=inf;
+                for(auto [v, _]: L[rt])
+                    qtable[v] = inf;
+                isr[rt] = 1;
             }
 
             int psize = 0;
@@ -92,6 +105,11 @@ class Mix_basic
                 NodeType rt=vid[i];
                 Ai.push_back(vid[i]);
                 d[rt]=0;
+
+                for(auto [v, w]: L[rt])
+                    qtable[v] = w;
+                int flg = 1;
+
                 std::priority_queue <pair <DistanceType, NodeType>, vector <pair <DistanceType, NodeType> >, std::greater <pair <DistanceType, NodeType>> > q;
                 q.push({d[rt],rt});
                 while(!q.empty())
@@ -100,7 +118,14 @@ class Mix_basic
                     q.pop();
                     if(d[u]<dis) continue;
                     inq.push_back(u);
-                    if(d[u] < Query(rt, u))
+
+                    if(isr[u]) 
+                    {
+                        flg = 0;
+                        continue;
+                    }
+
+                    if(flg || Query_Greater(u, d[u]))
                     {
                         L[u].push_back({rt,d[u]});
                         for(auto [v,w]: graph.GetAllEdges(u))
@@ -112,6 +137,9 @@ class Mix_basic
                     }
                 }
                 for(auto u: inq) d[u]=inf;
+                for(auto [v, _]: L[rt])
+                    qtable[v] = inf;
+                isr[rt] = 1;
             }
 
 
@@ -159,6 +187,12 @@ class Mix_basic
                 }
             }
             return ret;
+        }
+
+        bool Query_Greater(NodeType u, DistanceType d)
+        {
+            for(auto [v, w]: L[u]) if(qtable[v] <= d - w) return false;
+            return true;
         }
 
         DistanceType Query(NodeType u, NodeType v)

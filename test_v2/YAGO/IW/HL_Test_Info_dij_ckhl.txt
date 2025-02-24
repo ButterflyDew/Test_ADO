@@ -1,0 +1,4 @@
+HL_basic generated in: 39628.551000ms./39.628551s.
+HL Size is 45709342
+HL_basic generated in: 65259.399000ms./65.259399s.
+HL Size is 45039472

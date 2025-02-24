@@ -397,7 +397,7 @@ void Run_Query(int argc,char* argv[])
 
     FileManager fop(graphname + "/" + graph_type[type]);
     
-    string result_name = "Result_1.txt";
+    string result_name = "Result_2.txt";
     fop.clearFile(result_name);
 
     auto read_hl_info = [&]()

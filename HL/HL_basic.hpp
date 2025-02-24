@@ -55,6 +55,8 @@ class HL_basic
 
             
             vector <DistanceType> d(n,inf);
+            
+            vector <NodeType> isr(n);
 
             int cur = 1;
 
@@ -69,6 +71,11 @@ class HL_basic
                 vector <NodeType> inq;
                 NodeType rt=vid[i];
                 d[rt]=0;
+
+                for(auto [v, w]: L[rt])
+                    qtable[v] = w;
+                int flg = 1;
+
                 std::priority_queue <pair <DistanceType, NodeType>, vector <pair <DistanceType, NodeType> >, std::greater <pair <DistanceType, NodeType>> > q;
                 q.push({d[rt],rt});
                 while(!q.empty())
@@ -77,7 +84,14 @@ class HL_basic
                     q.pop();
                     if(d[u]<dis) continue;
                     inq.push_back(u);
-                    if(d[u] < Query(rt, u))
+
+                    if(isr[u]) 
+                    {
+                        flg = 0;
+                        continue;
+                    }
+
+                    if(flg || Query_Greater(u, d[u]))
                     {
                         L[u].push_back({rt,d[u]});
                         for(auto [v,w]: graph.GetAllEdges(u))
@@ -88,13 +102,22 @@ class HL_basic
                             }
                     }
                 }
-                for(auto u: inq) d[u]=inf;
+                for(auto u: inq) d[u] = inf;
+                for(auto [v, _]: L[rt])
+                    qtable[v] = inf;
+                isr[rt] = 1;
             }
 
             for(int i = 0; i < n; i++) LabelSize += L[i].size();
             std::cerr << "HL Contruct Done!" << std::endl;
         }
 
+        bool Query_Greater(NodeType u, DistanceType d)
+        {
+            for(auto [v, w]: L[u]) if(qtable[v] <= d - w) return false;
+            return true;
+        }
+        
         DistanceType Query(NodeType u, NodeType v)
         {
             DistanceType mindis=inf;

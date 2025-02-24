@@ -91,6 +91,47 @@ void Load_Parameters()
 
 }
 
+
+template<typename NodeType, typename DistanceType>
+void CK_HL_dijk(AdjacencyList<NodeType, DistanceType> &adjList, FileManager &fop, vector <NodeType> &qry, string outfile, string resultname)
+{
+    int N = adjList.GetSize();
+
+    cerr << "Start Build HL\n";
+
+    auto start = Clock::now();
+    HL_basic<NodeType, DistanceType> oracle(adjList);
+    auto dur = Clock::now() - start;
+
+    std::string create_time = "HL_basic generated in: " + std::to_string(std::chrono::duration<double, std::milli>(dur).count()) + "ms./"
+    + std::to_string(std::chrono::duration<double>(dur).count()) + "s.";
+    fop.writeToFile(resultname, create_time);
+    fop.writeToFile(resultname, "HL Size is " + std::to_string(oracle.LabelSize));
+    
+    int m = qry.size();
+    for(int i = 0; i < m; i++)
+    {
+        auto u = qry[i];
+        auto dist = adjList.GetNearest(u);
+        for(int j = 0; j < N; j++)
+        {
+            DistanceType c = oracle.Query(u, j);
+            if(abs(c - dist[j]) > 1e-9)
+            {
+                cerr << "The exact distance of " << u << " and " << j << " are " << c << " and " << dist[j] << "\n";
+                exit(0);
+            }
+            //std::cerr << "The exact distance of " << u << " and " << v << " is " << c << "\n";
+        }    
+        
+    }
+
+    // cerr << "Start Output HL\n";
+    // oracle.Output_Label(outfile);
+
+    cerr << "Ck HL used dijk ok!\n";
+}
+
 template<typename NodeType, typename DistanceType>
 vector<DistanceType> RunHL_basic(AdjacencyList<NodeType, DistanceType> &adjList, FileManager &fop, vector <pair <NodeType,NodeType> > &qry, string outfile, string resultname)
 {
@@ -192,8 +233,19 @@ void Build_HL(string graphname, string type, int QM)
         cerr << "usage: test_hl <graph-name> <graph-type> <qry-number>\n";
         exit(0); 
     }
-    
     int N;
+
+    auto geneNode = [&]()
+    {
+        std::mt19937 gen(seed);
+        std::uniform_int_distribution<> rnd(0, N-1);
+        vector <int> qry;
+        for(int i=0;i<QM;i++)
+            qry.push_back(rnd(gen));
+        return qry;
+    };
+
+    
     auto geneqry = [&]()
     {
         std::mt19937 gen(seed);
@@ -209,7 +261,7 @@ void Build_HL(string graphname, string type, int QM)
     string graph_file = "../data/" + graphname;
     FileManager fop(graphname + "/" + graph_type[type]);
     
-    string result_name = "HL_Test_Info.txt";
+    string result_name = "HL_Test_Info_dij_ckhl.txt";
     fop.clearFile(result_name);
 
     auto GoTest = [&]<typename EdgeType>(const string& hl_suffix) 
@@ -217,23 +269,28 @@ void Build_HL(string graphname, string type, int QM)
         LoadGraph<int, EdgeType> g(graph_file, graph_type[type] == "UW" ? 0 : 1, graph_offset[graphname]);
         N = g.N;
         auto qry = geneqry();
+        auto nlis = geneNode();
         string file = graph_file + "/HL_" + hl_suffix;
-        auto ans = RunHL_basic(g.adjList, fop, qry, file + ".txt", result_name);
-        auto a1 = RunHL_v2(g.adjList, fop, qry, file + "_1.txt", result_name, "1", 1);
-        //auto a2 = RunHL_v2(g.adjList, fop, qry, file + "_2.txt", result_name, "2", 2);
-        auto a3 = RunHL_v2(g.adjList, fop, qry, file + "_3.txt", result_name, "3", 4);
-        auto aa = RunHL_v2(g.adjList, fop, qry, file + "_all.txt", result_name, "all", 5);
-        check(ans, a1, qry, "a1");
-        //check(ans, a2, qry, "a2");
-        check(ans, a3, qry, "a3");
-        check(ans, aa, qry, "aa");
+        CK_HL_dijk(g.adjList, fop, nlis, file + ".txt", result_name);
+        // auto ans = RunHL_basic(g.adjList, fop, qry, file + ".txt", result_name);
+        // auto a1 = RunHL_v2(g.adjList, fop, qry, file + "_1.txt", result_name, "1", 1);
+        // auto a2 = RunHL_v2(g.adjList, fop, qry, file + "_2.txt", result_name, "2", 2);
+        // auto a3 = RunHL_v2(g.adjList, fop, qry, file + "_3.txt", result_name, "3", 4);
+        // auto aa = RunHL_v2(g.adjList, fop, qry, file + "_all.txt", result_name, "all", 7);
+        // check(ans, a1, qry, "a1");
+        // check(ans, a2, qry, "a2");
+        // check(ans, a3, qry, "a3");
+        // check(ans, aa, qry, "aa");
     };
     
 
     if (graph_type[type] == "UW")
         GoTest.template operator()<int>("UW");
     else
+    {
+        GoTest.template operator()<double>("IW");
         GoTest.template operator()<long double>("IW");
+    }       
 }
 
 int main(int argc, char* argv[])
